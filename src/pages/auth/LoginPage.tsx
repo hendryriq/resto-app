@@ -9,7 +9,6 @@ import {
   Button,
   Typography,
   Alert,
-  Container,
   InputAdornment,
   IconButton,
 } from '@mui/material';
@@ -41,8 +40,39 @@ export default function LoginPage() {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
-      <Card sx={{ p: 4, width: '100%', boxShadow: 3 }}>
+    <Box 
+      sx={{ 
+        // Memaksa box mengambil seluruh ukuran layar browser
+        height: '100vh', 
+        width: '100vw',
+        
+        // Teknik Centering Flexbox
+        display: 'flex', 
+        alignItems: 'center',      // Tengah Vertikal
+        justifyContent: 'center',  // Tengah Horizontal
+        
+        bgcolor: 'grey.100',
+        
+        // Reset posisi agar tidak terpengaruh margin bawaan browser
+        position: 'fixed', 
+        top: 0,
+        left: 0,
+        m: 0,
+        p: 0,
+        overflow: 'hidden' // Mencegah scrollbar muncul
+      }}
+    >
+      <Card 
+        sx={{ 
+          p: 4, 
+          // Mengatur lebar card manual (pengganti Container xs)
+          width: '100%', 
+          maxWidth: 400, 
+          boxShadow: 3, 
+          borderRadius: 2,
+          mx: 2 // Margin horizontal agar tidak nempel tepi HP
+        }}
+      >
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Restaurant sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
           <Typography variant="h4" fontWeight={600} gutterBottom>
@@ -99,24 +129,12 @@ export default function LoginPage() {
             variant="contained"
             size="large"
             disabled={loading}
-            sx={{ mt: 3, py: 1.5 }}
+            sx={{ mt: 3, py: 1.5, fontWeight: 'bold' }}
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
-
-        <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-          <Typography variant="caption" color="text.secondary" display="block">
-            Demo Accounts:
-          </Typography>
-          <Typography variant="body2" sx={{ mt: 1 }}>
-            <strong>Pelayan:</strong> pelayan@example.com
-          </Typography>
-          <Typography variant="body2">
-            <strong>Kasir:</strong> kasir@example.com
-          </Typography>
-        </Box>
       </Card>
-    </Container>
+    </Box>
   );
 }
