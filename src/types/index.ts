@@ -7,7 +7,7 @@ export interface User {
 
 export interface Table {
   id: number;
-  number: string;
+  table_number: string;
   status: 'available' | 'occupied' | 'reserved' | 'inactive';
   capacity?: number;
 }
