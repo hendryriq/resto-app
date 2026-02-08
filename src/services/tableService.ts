@@ -1,10 +1,5 @@
 import api from './api';
-import type { Table } from '../types';
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-}
+import type { Table, ApiResponse } from '../types';
 
 export const tableService = {
   getAll: async () => {

@@ -47,10 +47,6 @@ export default function DashboardPage() {
         return '#64748B';
       case 'occupied':
         return '#475569';
-      case 'reserved':
-        return '#94A3B8';
-      case 'inactive':
-        return '#CBD5E1';
       default:
         return '#E2E8F0';
     }
@@ -60,13 +56,10 @@ export default function DashboardPage() {
     return {
       available: tables.filter(t => t.status === 'available').length,
       occupied: tables.filter(t => t.status === 'occupied').length,
-      reserved: tables.filter(t => t.status === 'reserved').length,
-      inactive: tables.filter(t => t.status === 'inactive').length,
     };
   }, [tables]);
 
   const handleTableClick = (table: Table) => {
-    if (table.status === 'inactive') return;
     if (table.status === 'available') {
       navigate(`/orders/new?tableId=${table.id}`);
     } else {
@@ -146,8 +139,6 @@ export default function DashboardPage() {
             {[
               { label: 'Available', color: getStatusColor('available') },
               { label: 'Occupied', color: getStatusColor('occupied') },
-              { label: 'Reserved', color: getStatusColor('reserved') },
-              { label: 'Inactive', color: getStatusColor('inactive') },
             ].map((item) => (
               <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Box sx={{ width: 18, height: 18, borderRadius: 0.5, bgcolor: item.color }} />
@@ -194,15 +185,15 @@ export default function DashboardPage() {
                         color: 'white',
                         aspectRatio: '5/4',
                         borderRadius: 2,
-                        cursor: table.status === 'inactive' ? 'not-allowed' : 'pointer',
+                        cursor: 'pointer',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
                         transition: 'all 0.2s',
                         '&:hover': {
-                          transform: table.status !== 'inactive' ? 'translateY(-4px)' : 'none',
-                          boxShadow: table.status !== 'inactive' ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)' : 'none'
+                          transform: 'translateY(-4px)',
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                         },
                       }}
                     >
@@ -227,9 +218,7 @@ export default function DashboardPage() {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {[
                   { label: 'Available Tables', value: stats.available },
-                  { label: 'Occupied Tables', value: stats.occupied },
-                  { label: 'Reserved Tables', value: stats.reserved },
-                  { label: 'Inactive Tables', value: stats.inactive },
+                  { label: 'Occupied Tables', value: stats.occupied }
                 ].map((stat) => (
                   <Paper 
                     key={stat.label} 

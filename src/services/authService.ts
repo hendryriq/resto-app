@@ -1,31 +1,21 @@
 import api from './api';
-import type { User } from '../types';
-
-interface LoginResponse {
-  user: User;
-  token: string;
-}
+import type { User, ApiResponse } from '../types';
 
 export const authService = {
-  login: async (email: string, password: string): Promise<LoginResponse> => {
-    const formData = new FormData();
-    formData.append('email', email);
-    formData.append('password', password);
-    
-    const response = await api.post<LoginResponse>('/login', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+  login: async (email: string, password: string) => {
+    const response = await api.post<ApiResponse<{ user: User; token: string }>>('/login', {
+      email,
+      password,
     });
-    return response.data;
+    return response.data.data;
   },
   
   logout: async () => {
     await api.post('/logout');
   },
   
-  getCurrentUser: async (): Promise<User> => {
-    const response = await api.get<User>('/user');
-    return response.data;
+  getCurrentUser: async () => {
+    const response = await api.get<ApiResponse<{ user: User }>>('/me');
+    return response.data.data.user;
   },
 };
