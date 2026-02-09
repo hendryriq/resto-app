@@ -3,17 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
-  Button,
   Paper,
   CircularProgress,
   Alert,
-  Container
 } from '@mui/material';
-import {
-  GridView as FloorPlanIcon,
-  FormatListBulleted as ListViewIcon,
-} from '@mui/icons-material';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import ViewToggle from '../../components/common/ViewToggle';
 import { tableService } from '../../services/tableService';
 import type { Table } from '../../types';
 
@@ -22,7 +17,6 @@ export default function DashboardPage() {
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [viewMode, setViewMode] = useState<'floor' | 'list'>('floor');
 
   useEffect(() => {
     loadTables();
@@ -79,45 +73,14 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Box sx={{ bgcolor: '#F9FAFB', minHeight: '100vh', p: 3 }}>
         
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-          <Typography variant="h5" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827' }}>
             Table Management
           </Typography>
           
-          <Box sx={{ bgcolor: 'white', borderRadius: 2, border: '1px solid #E5E7EB', p: 0.5 }}>
-            <Button
-              startIcon={<FloorPlanIcon />}
-              onClick={() => setViewMode('floor')}
-              sx={{
-                bgcolor: viewMode === 'floor' ? '#1F2937' : 'transparent',
-                color: viewMode === 'floor' ? 'white' : '#6B7280',
-                textTransform: 'none',
-                fontWeight: 600,
-                borderRadius: 1.5,
-                px: 2,
-                '&:hover': { bgcolor: viewMode === 'floor' ? '#111827' : '#F3F4F6' }
-              }}
-            >
-              Floor Plan
-            </Button>
-            <Button
-              startIcon={<ListViewIcon />}
-              onClick={() => setViewMode('list')}
-              sx={{
-                bgcolor: viewMode === 'list' ? '#1F2937' : 'transparent',
-                color: viewMode === 'list' ? 'white' : '#6B7280',
-                textTransform: 'none',
-                fontWeight: 600,
-                borderRadius: 1.5,
-                px: 2,
-                '&:hover': { bgcolor: viewMode === 'list' ? '#111827' : '#F3F4F6' }
-              }}
-            >
-              List View
-            </Button>
-          </Box>
+          <ViewToggle />
         </Box>
 
         {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
@@ -163,51 +126,45 @@ export default function DashboardPage() {
           <Box sx={{ display: 'flex', gap: 6, flexDirection: { xs: 'column', lg: 'row' } }}>
             
             <Box sx={{ flex: 1 }}>
-              {viewMode === 'floor' ? (
-                <Box 
-                  sx={{ 
-                    display: 'grid',
-                    gridTemplateColumns: {
-                      xs: 'repeat(2, 1fr)',
-                      sm: 'repeat(4, 1fr)',
-                      md: 'repeat(6, 1fr)',
-                    },
-                    gap: 2.5 
-                  }}
-                >
-                  {tables.map((table) => (
-                    <Paper
-                      key={table.id}
-                      onClick={() => handleTableClick(table)}
-                      elevation={0}
-                      sx={{
-                        bgcolor: getStatusColor(table.status),
-                        color: 'white',
-                        aspectRatio: '5/4',
-                        borderRadius: 2,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          transform: 'translateY(-4px)',
-                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                        },
-                      }}
-                    >
-                      <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                        {table.table_number}
-                      </Typography>
-                    </Paper>
-                  ))}
-                </Box>
-              ) : (
-                <Box sx={{ p: 4, textAlign: 'center', color: '#6B7280' }}>
-                  List view content goes here
-                </Box>
-              )}
+              <Box 
+                sx={{ 
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: 'repeat(2, 1fr)',
+                    sm: 'repeat(4, 1fr)',
+                    md: 'repeat(6, 1fr)',
+                  },
+                  gap: 2.5 
+                }}
+              >
+                {tables.map((table) => (
+                  <Paper
+                    key={table.id}
+                    onClick={() => handleTableClick(table)}
+                    elevation={0}
+                    sx={{
+                      bgcolor: getStatusColor(table.status),
+                      color: 'white',
+                      aspectRatio: '5/4',
+                      borderRadius: 2,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                      },
+                    }}
+                  >
+                    <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                      {table.table_number}
+                    </Typography>
+                  </Paper>
+                ))}
+              </Box>
             </Box>
 
             <Box sx={{ width: { xs: '100%', lg: 280 }, flexShrink: 0 }}>
@@ -247,7 +204,7 @@ export default function DashboardPage() {
 
           </Box>
         </Paper>
-      </Container>
+      </Box>
     </DashboardLayout>
   );
 }

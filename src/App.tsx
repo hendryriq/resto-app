@@ -3,6 +3,7 @@ import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import LoginPage from './pages/auth/LoginPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import OrderDetailPage from './pages/orders/OrderDetailPage';
+import OrderListPage from './pages/orders/OrderListPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 const theme = createTheme({
@@ -31,6 +32,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute>
+                <OrderListPage />
               </ProtectedRoute>
             }
           />
