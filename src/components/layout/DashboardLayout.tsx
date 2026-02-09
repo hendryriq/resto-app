@@ -10,6 +10,7 @@ import {
   MenuItem,
   TextField,
   InputAdornment,
+  Button,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -53,6 +54,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <Toolbar sx={{ gap: 2, height: 70 }}>
           
           <Box 
+            onClick={() => navigate('/dashboard')}
             sx={{ 
               bgcolor: '#1F2937', 
               color: 'white',
@@ -64,7 +66,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               letterSpacing: '0.5px',
               display: 'flex',
               alignItems: 'center',
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': {
+                bgcolor: '#111827',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                transform: 'translateY(-1px)'
+              }
             }}
           >
             RestaurantPOS
@@ -107,6 +116,27 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           />
 
           <Box sx={{ flexGrow: 1 }} />
+
+          {user?.role === 'kasir' && (
+            <Button
+              onClick={() => navigate('/menu')}
+              sx={{
+                bgcolor: '#F3F4F6',
+                color: '#1F2937',
+                borderRadius: 1.5,
+                px: 2,
+                py: 0.75,
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                '&:hover': {
+                  bgcolor: '#E5E7EB',
+                },
+              }}
+            >
+              Menu Management
+            </Button>
+          )}
 
           <Box 
             sx={{ 

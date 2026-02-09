@@ -25,6 +25,7 @@ export interface Food {
   price: number;
   category: string | null;
   image_url?: string | null;
+  available?: boolean;
   created_at?: string;
   updated_at?: string;
 }

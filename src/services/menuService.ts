@@ -12,4 +12,18 @@ export const menuService = {
     const response = await api.get<ApiResponse<Food>>(`/foods/${id}`);
     return response.data.data;
   },
+  
+  create: async (foodData: Omit<Food, 'id'>) => {
+    const response = await api.post<ApiResponse<Food>>('/foods', foodData);
+    return response.data.data;
+  },
+  
+  update: async (id: number, foodData: Partial<Food>) => {
+    const response = await api.put<ApiResponse<Food>>(`/foods/${id}`, foodData);
+    return response.data.data;
+  },
+  
+  delete: async (id: number) => {
+    await api.delete(`/foods/${id}`);
+  },
 };

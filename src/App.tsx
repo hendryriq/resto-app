@@ -4,6 +4,7 @@ import LoginPage from './pages/auth/LoginPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import OrderDetailPage from './pages/orders/OrderDetailPage';
 import OrderListPage from './pages/orders/OrderListPage';
+import MenuManagementPage from './pages/menu/MenuManagementPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 const theme = createTheme({
@@ -48,6 +49,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <OrderDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/menu"
+            element={
+              <ProtectedRoute allowedRoles={['kasir']}>
+                <MenuManagementPage />
               </ProtectedRoute>
             }
           />
