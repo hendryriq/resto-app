@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { AxiosError } from 'axios';
+import type { Food, ApiErrorResponse } from '../../types';
 import {
   Box,
   Typography,
@@ -34,7 +36,6 @@ import {
 } from '@mui/icons-material';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { menuService } from '../../services/menuService';
-import type { Food } from '../../types';
 
 interface FoodFormData {
   name: string;
@@ -58,20 +59,20 @@ const categories = ['Appetizers', 'Main Course', 'Desserts', 'Beverages', 'Salad
 
 export default function MenuManagementPage() {
   const [foods, setFoods] = useState<Food[]>([]);
-  const [filteredFoods, setFilteredFoods] = useState<Food[]>([]);
+  // filteredFoods is now derived via useMemo
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  
+
   const [openDialog, setOpenDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
   const [currentFood, setCurrentFood] = useState<Food | null>(null);
   const [formData, setFormData] = useState<FoodFormData>(initialFormData);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [saveLoading, setSaveLoading] = useState(false);
-  
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [foodToDelete, setFoodToDelete] = useState<Food | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -81,22 +82,10 @@ export default function MenuManagementPage() {
   }, []);
 
   useEffect(() => {
-    filterFoods();
-  }, [foods, searchQuery, categoryFilter]);
+    fetchFoods();
+  }, []);
 
-  const fetchFoods = async () => {
-    try {
-      setLoading(true);
-      const data = await menuService.getAll();
-      setFoods(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch menu items');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterFoods = () => {
+  const filteredFoods = useMemo(() => {
     let filtered = foods;
 
     if (categoryFilter !== 'all') {
@@ -109,7 +98,20 @@ export default function MenuManagementPage() {
       );
     }
 
-    setFilteredFoods(filtered);
+    return filtered;
+  }, [foods, searchQuery, categoryFilter]);
+
+  const fetchFoods = async () => {
+    try {
+      setLoading(true);
+      const data = await menuService.getAll();
+      setFoods(data);
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(error.response?.data?.message || 'Failed to fetch menu items');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAddClick = () => {
@@ -170,16 +172,18 @@ export default function MenuManagementPage() {
       };
 
       if (dialogMode === 'add') {
-        await menuService.create(payload as any);
+        const createPayload = { ...payload } as Omit<Food, 'id'>; // Explicit cast to satisfy type checker if needed, or just pass payload
+        await menuService.create(createPayload);
       } else if (currentFood) {
         await menuService.update(currentFood.id, payload);
       }
 
       await fetchFoods();
       handleDialogClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Save error:', err);
-      setError(err.response?.data?.message || 'Failed to save menu item');
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(error.response?.data?.message || 'Failed to save menu item');
     } finally {
       setSaveLoading(false);
     }
@@ -200,15 +204,17 @@ export default function MenuManagementPage() {
       await fetchFoods();
       setDeleteDialogOpen(false);
       setFoodToDelete(null);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete menu item');
+      setFoodToDelete(null);
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(error.response?.data?.message || 'Failed to delete menu item');
     } finally {
       setDeleteLoading(false);
     }
   };
 
   const getCategoryColor = (category: string | null) => {
-    switch(category) {
+    switch (category) {
       case 'Appetizers': return { bg: '#FEF3C7', text: '#D97706' };
       case 'Main Course': return { bg: '#DBEAFE', text: '#2563EB' };
       case 'Desserts': return { bg: '#FCE7F3', text: '#DB2777' };
@@ -231,7 +237,7 @@ export default function MenuManagementPage() {
   return (
     <DashboardLayout>
       <Box sx={{ bgcolor: '#F9FAFB', minHeight: '100vh', p: { xs: 2, md: 3 } }}>
-        
+
         {/* Header Section */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
           <Box>
@@ -242,7 +248,7 @@ export default function MenuManagementPage() {
               Manage your restaurant's food and beverage offerings
             </Typography>
           </Box>
-          
+
           <Button
             variant="contained"
             startIcon={<Add />}
@@ -269,12 +275,12 @@ export default function MenuManagementPage() {
         )}
 
         {/* Filter Section */}
-        <Paper 
+        <Paper
           elevation={0}
-          sx={{ 
-            p: 2.5, 
+          sx={{
+            p: 2.5,
             mb: 4,
-            bgcolor: 'white', 
+            bgcolor: 'white',
             border: '1px solid #E5E7EB',
             borderRadius: 3,
             display: 'flex',
@@ -288,7 +294,7 @@ export default function MenuManagementPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             size="small"
-            sx={{ 
+            sx={{
               minWidth: { xs: '100%', sm: 300 },
               '& .MuiOutlinedInput-root': {
                 borderRadius: 2,
@@ -306,13 +312,13 @@ export default function MenuManagementPage() {
               ),
             }}
           />
-          
+
           <FormControl size="small" sx={{ minWidth: 200, flexGrow: { xs: 1, sm: 0 } }}>
             <Select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
               displayEmpty
-              sx={{ 
+              sx={{
                 borderRadius: 2,
                 bgcolor: '#F9FAFB',
                 '.MuiOutlinedInput-notchedOutline': { borderColor: '#E5E7EB' },
@@ -358,8 +364,8 @@ export default function MenuManagementPage() {
             )}
           </Box>
         ) : (
-          <Box sx={{ 
-            display: 'grid', 
+          <Box sx={{
+            display: 'grid',
             gridTemplateColumns: {
               xs: '1fr',
               sm: 'repeat(2, 1fr)',
@@ -371,156 +377,156 @@ export default function MenuManagementPage() {
             {filteredFoods.map((food) => {
               const catColors = getCategoryColor(food.category);
               return (
-                <Card 
+                <Card
                   key={food.id}
                   elevation={0}
-                    sx={{ 
-                      height: '100%', 
-                      display: 'flex', 
-                      flexDirection: 'column',
-                      border: '1px solid #E5E7EB',
-                      borderRadius: 3,
-                      overflow: 'hidden',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: '0 12px 20px -8px rgba(0, 0, 0, 0.1)',
-                        borderColor: '#D1D5DB'
-                      }
-                    }}
-                  >
-                    <Box sx={{ position: 'relative', paddingTop: '60%'}}>
-                      {food.image_url ? (
-                        <CardMedia
-                          component="img"
-                          image={food.image_url}
-                          alt={food.name}
-                          sx={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                          }}
-                        />
-                      ) : (
-                        <Box
-                          sx={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
-                            bgcolor: '#F3F4F6',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#9CA3AF'
-                          }}
-                        >
-                          <ImageNotSupported />
-                        </Box>
-                      )}
-                      
-                      {/* Status Badge */}
-                      <Box sx={{ position: 'absolute', top: 12, right: 12 }}>
-                        <Chip 
-                          label={food.available !== false ? 'Available' : 'Unavailable'} 
-                          size="small"
-                          sx={{ 
-                            bgcolor: food.available !== false ? 'rgba(16, 185, 129, 0.9)' : 'rgba(239, 68, 68, 0.9)', 
-                            color: 'white',
-                            fontWeight: 700,
-                            fontSize: '0.7rem',
-                            backdropFilter: 'blur(4px)',
-                            height: 24
-                          }} 
-                        />
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    border: '1px solid #E5E7EB',
+                    borderRadius: 3,
+                    overflow: 'hidden',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 12px 20px -8px rgba(0, 0, 0, 0.1)',
+                      borderColor: '#D1D5DB'
+                    }
+                  }}
+                >
+                  <Box sx={{ position: 'relative', paddingTop: '60%' }}>
+                    {food.image_url ? (
+                      <CardMedia
+                        component="img"
+                        image={food.image_url}
+                        alt={food.name}
+                        sx={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    ) : (
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          bgcolor: '#F3F4F6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#9CA3AF'
+                        }}
+                      >
+                        <ImageNotSupported />
                       </Box>
+                    )}
+
+                    {/* Status Badge */}
+                    <Box sx={{ position: 'absolute', top: 12, right: 12 }}>
+                      <Chip
+                        label={food.available !== false ? 'Available' : 'Unavailable'}
+                        size="small"
+                        sx={{
+                          bgcolor: food.available !== false ? 'rgba(16, 185, 129, 0.9)' : 'rgba(239, 68, 68, 0.9)',
+                          color: 'white',
+                          fontWeight: 700,
+                          fontSize: '0.7rem',
+                          backdropFilter: 'blur(4px)',
+                          height: 24
+                        }}
+                      />
+                    </Box>
+                  </Box>
+
+                  <CardContent sx={{ flexGrow: 1, p: 2.5 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                      <Typography gutterBottom variant="h6" component="div" sx={{ fontWeight: 700, lineHeight: 1.3, mb: 0 }}>
+                        {food.name}
+                      </Typography>
                     </Box>
 
-                    <CardContent sx={{ flexGrow: 1, p: 2.5 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                        <Typography gutterBottom variant="h6" component="div" sx={{ fontWeight: 700, lineHeight: 1.3, mb: 0 }}>
-                          {food.name}
-                        </Typography>
-                      </Box>
-                      
-                      <Box sx={{ mb: 2 }}>
-                         <Chip 
-                            label={food.category} 
-                            size="small" 
-                            sx={{ 
-                                bgcolor: catColors.bg, 
-                                color: catColors.text,
-                                fontWeight: 600,
-                                fontSize: '0.7rem',
-                                height: 24,
-                                borderRadius: 1
-                            }} 
-                        />
-                      </Box>
-
-                      <Typography variant="body2" color="text.secondary" sx={{ 
-                        mb: 2, 
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        height: 40
-                      }}>
-                        {food.description || 'No description available.'}
-                      </Typography>
-
-                      <Typography variant="h6" sx={{ fontWeight: 800, color: '#1F2937' }}>
-                        ${Number(food.price).toFixed(2)}
-                      </Typography>
-                    </CardContent>
-
-                    <CardActions sx={{ p: 2, pt: 0, borderTop: '1px solid #F3F4F6', mt: 'auto', display: 'flex', gap: 1 }}>
-                      <Button 
-                        fullWidth 
-                        variant="outlined" 
+                    <Box sx={{ mb: 2 }}>
+                      <Chip
+                        label={food.category}
                         size="small"
-                        startIcon={<Edit fontSize="small" />}
-                        onClick={() => handleEditClick(food)}
-                        sx={{ 
-                            borderColor: '#E5E7EB', 
-                            color: '#374151',
-                            textTransform: 'none',
-                            fontWeight: 600,
-                            '&:hover': { borderColor: '#D1D5DB', bgcolor: '#F9FAFB' }
+                        sx={{
+                          bgcolor: catColors.bg,
+                          color: catColors.text,
+                          fontWeight: 600,
+                          fontSize: '0.7rem',
+                          height: 24,
+                          borderRadius: 1
                         }}
-                      >
-                        Edit
-                      </Button>
-                      <Button 
-                        fullWidth 
-                        variant="outlined" 
-                        size="small"
-                        color="error"
-                        startIcon={<Delete fontSize="small" />}
-                        onClick={() => handleDeleteClick(food)}
-                        sx={{ 
-                            borderColor: '#FEE2E2', 
-                            color: '#EF4444',
-                            textTransform: 'none',
-                            fontWeight: 600,
-                            '&:hover': { borderColor: '#FCA5A5', bgcolor: '#FEF2F2' }
-                        }}
-                      >
-                        Delete
-                      </Button>
-                    </CardActions>
-                  </Card>
+                      />
+                    </Box>
+
+                    <Typography variant="body2" color="text.secondary" sx={{
+                      mb: 2,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      height: 40
+                    }}>
+                      {food.description || 'No description available.'}
+                    </Typography>
+
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#1F2937' }}>
+                      ${Number(food.price).toFixed(2)}
+                    </Typography>
+                  </CardContent>
+
+                  <CardActions sx={{ p: 2, pt: 0, borderTop: '1px solid #F3F4F6', mt: 'auto', display: 'flex', gap: 1 }}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      size="small"
+                      startIcon={<Edit fontSize="small" />}
+                      onClick={() => handleEditClick(food)}
+                      sx={{
+                        borderColor: '#E5E7EB',
+                        color: '#374151',
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        '&:hover': { borderColor: '#D1D5DB', bgcolor: '#F9FAFB' }
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      size="small"
+                      color="error"
+                      startIcon={<Delete fontSize="small" />}
+                      onClick={() => handleDeleteClick(food)}
+                      sx={{
+                        borderColor: '#FEE2E2',
+                        color: '#EF4444',
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        '&:hover': { borderColor: '#FCA5A5', bgcolor: '#FEF2F2' }
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </CardActions>
+                </Card>
               );
             })}
           </Box>
         )}
 
-        <Dialog 
-          open={openDialog} 
+        <Dialog
+          open={openDialog}
           onClose={handleDialogClose}
           maxWidth="sm"
           fullWidth
@@ -530,13 +536,13 @@ export default function MenuManagementPage() {
         >
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 3, borderBottom: '1px solid #E5E7EB' }}>
             <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                {dialogMode === 'add' ? 'Add New Menu Item' : 'Edit Menu Item'}
+              {dialogMode === 'add' ? 'Add New Menu Item' : 'Edit Menu Item'}
             </Typography>
             <IconButton onClick={handleDialogClose} size="small">
-                <CloseIcon />
+              <CloseIcon />
             </IconButton>
           </Box>
-          
+
           <DialogContent sx={{ p: 3 }}>
             <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
               <TextField
@@ -549,7 +555,7 @@ export default function MenuManagementPage() {
                 fullWidth
                 InputLabelProps={{ shrink: true }}
               />
-              
+
               <TextField
                 label="Description"
                 placeholder="Describe the ingredients and taste..."
@@ -563,18 +569,18 @@ export default function MenuManagementPage() {
 
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                 <FormControl fullWidth>
-                    <InputLabel shrink>Category</InputLabel>
-                    <Select
+                  <InputLabel shrink>Category</InputLabel>
+                  <Select
                     value={formData.category}
                     label="Category"
                     displayEmpty
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     notched
-                    >
+                  >
                     {categories.map((cat) => (
-                        <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                      <MenuItem key={cat} value={cat}>{cat}</MenuItem>
                     ))}
-                    </Select>
+                  </Select>
                 </FormControl>
                 <TextField
                   label="Price"
@@ -599,7 +605,7 @@ export default function MenuManagementPage() {
                   }}
                 />
               </Box>
-              
+
               <TextField
                 label="Image URL"
                 placeholder="https://example.com/image.jpg"
@@ -609,27 +615,27 @@ export default function MenuManagementPage() {
                 InputLabelProps={{ shrink: true }}
                 helperText="Link to an image file (JPG, PNG, WEBP)"
               />
-              
+
               <Paper variant="outlined" sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#F9FAFB' }}>
                 <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Availability</Typography>
-                    <Typography variant="caption" color="text.secondary">Available for ordering?</Typography>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Availability</Typography>
+                  <Typography variant="caption" color="text.secondary">Available for ordering?</Typography>
                 </Box>
                 <Switch
-                    checked={formData.available}
-                    onChange={(e) => setFormData({ ...formData, available: e.target.checked })}
+                  checked={formData.available}
+                  onChange={(e) => setFormData({ ...formData, available: e.target.checked })}
                 />
               </Paper>
             </Box>
           </DialogContent>
           <DialogActions sx={{ p: 3, pt: 0 }}>
-            <Button 
+            <Button
               onClick={handleDialogClose}
               sx={{ textTransform: 'none', fontWeight: 600, color: '#6B7280' }}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleSave}
               variant="contained"
               disabled={saveLoading}
@@ -652,52 +658,52 @@ export default function MenuManagementPage() {
           PaperProps={{ sx: { borderRadius: 3, maxWidth: 400 } }}
         >
           <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Box sx={{ 
-                width: 60, height: 60, borderRadius: '50%', bgcolor: '#FEE2E2', 
-                color: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                mx: 'auto', mb: 2
+            <Box sx={{
+              width: 60, height: 60, borderRadius: '50%', bgcolor: '#FEE2E2',
+              color: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              mx: 'auto', mb: 2
             }}>
-                <Delete fontSize="large" />
+              <Delete fontSize="large" />
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                Delete Item?
+              Delete Item?
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Are you sure you want to delete <strong>{foodToDelete?.name}</strong>?
               This action cannot be undone.
             </Typography>
-            
+
             <Box sx={{ display: 'flex', gap: 2 }}>
-                <Button 
-                    fullWidth
-                    onClick={() => setDeleteDialogOpen(false)}
-                    disabled={deleteLoading}
-                    variant="outlined"
-                    sx={{ 
-                        textTransform: 'none', 
-                        fontWeight: 600, 
-                        borderColor: '#E5E7EB',
-                        color: '#374151',
-                        '&:hover': { bgcolor: '#F9FAFB', borderColor: '#D1D5DB' }
-                    }}
-                >
+              <Button
+                fullWidth
+                onClick={() => setDeleteDialogOpen(false)}
+                disabled={deleteLoading}
+                variant="outlined"
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderColor: '#E5E7EB',
+                  color: '#374151',
+                  '&:hover': { bgcolor: '#F9FAFB', borderColor: '#D1D5DB' }
+                }}
+              >
                 Cancel
-                </Button>
-                <Button 
-                    fullWidth
-                    onClick={handleDeleteConfirm}
-                    variant="contained"
-                    disabled={deleteLoading}
-                    color="error"
-                    sx={{
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        boxShadow: 'none',
-                        '&:hover': { boxShadow: 'none', bgcolor: '#DC2626' }
-                    }}
-                >
+              </Button>
+              <Button
+                fullWidth
+                onClick={handleDeleteConfirm}
+                variant="contained"
+                disabled={deleteLoading}
+                color="error"
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  boxShadow: 'none',
+                  '&:hover': { boxShadow: 'none', bgcolor: '#DC2626' }
+                }}
+              >
                 {deleteLoading ? 'Deleting...' : 'Delete'}
-                </Button>
+              </Button>
             </Box>
           </Box>
         </Dialog>

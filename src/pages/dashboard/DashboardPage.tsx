@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AxiosError } from 'axios';
 import {
   Box,
   Typography,
@@ -11,7 +12,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import ViewToggle from '../../components/common/ViewToggle';
 import { tableService } from '../../services/tableService';
 import { orderService } from '../../services/orderService';
-import type { Table } from '../../types';
+import type { Table, ApiErrorResponse } from '../../types';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -40,8 +41,9 @@ export default function DashboardPage() {
 
       setTables(updatedTables);
       setError('');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load tables');
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(error.response?.data?.message || 'Failed to load tables');
     } finally {
       setLoading(false);
     }

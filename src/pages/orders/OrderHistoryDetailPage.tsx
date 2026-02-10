@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { AxiosError } from 'axios';
+import type { ApiErrorResponse } from '../../types';
 import {
     Box,
     Typography,
@@ -29,23 +31,24 @@ export default function OrderHistoryDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    useEffect(() => {
-        if (orderId) {
-            fetchOrder();
-        }
-    }, [orderId]);
-
-    const fetchOrder = async () => {
+    const fetchOrder = useCallback(async () => {
         try {
             setLoading(true);
             const data = await orderService.getById(Number(orderId));
             setOrder(data);
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to fetch order details');
+        } catch (err: unknown) {
+            const error = err as AxiosError<ApiErrorResponse>;
+            setError(error.response?.data?.message || 'Failed to fetch order details');
         } finally {
             setLoading(false);
         }
-    };
+    }, [orderId]);
+
+    useEffect(() => {
+        if (orderId) {
+            fetchOrder();
+        }
+    }, [orderId, fetchOrder]);
 
     const handlePrintReceipt = async () => {
         if (!order) return;
@@ -68,16 +71,23 @@ export default function OrderHistoryDetailPage() {
             link.remove();
 
             window.open(url, '_blank');
-        } catch (err: any) {
-            if (err.response?.data instanceof Blob) {
+        } catch (err: unknown) {
+            const error = err as AxiosError<ApiErrorResponse | Blob>;
+            if (error.response?.data instanceof Blob) {
                 try {
-                    const text = await err.response.data.text();
+                    const text = await error.response.data.text();
                     const errorData = JSON.parse(text);
                     setError(errorData.message || 'Failed to generate receipt');
                     return;
-                } catch { }
+                } catch {
+                    // ignore parse error
+                }
             }
-            setError(err.message || 'Failed to generate receipt');
+            if (err instanceof Error) {
+                setError(err.message || 'Failed to generate receipt');
+            } else {
+                setError('Failed to generate receipt');
+            }
         } finally {
             setLoading(false);
         }

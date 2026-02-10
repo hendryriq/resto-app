@@ -1,5 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
+import { AxiosError } from 'axios';
+import type { ApiErrorResponse } from '../../types';
 import {
   Box,
   Typography,
@@ -58,16 +60,7 @@ export default function OrderDetailPage() {
   const orderSavedRef = useRef(false);
   const orderIdRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    if (tableId) {
-      initializeOrder();
-    }
-  }, [tableId]);
-
-  useEffect(() => {
-  }, []);
-
-  const initializeOrder = async () => {
+  const initializeOrder = useCallback(async () => {
     try {
       setLoading(true);
       const menuData = await menuService.getAll();
@@ -93,12 +86,19 @@ export default function OrderDetailPage() {
       }
 
       setError('');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to initialize');
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(error.response?.data?.message || 'Failed to initialize');
     } finally {
       setLoading(false);
     }
-  };
+  }, [tableId]);
+
+  useEffect(() => {
+    if (tableId) {
+      initializeOrder();
+    }
+  }, [tableId, initializeOrder]);
 
   const handleAddItem = async (food: Food) => {
     try {
@@ -157,8 +157,9 @@ export default function OrderDetailPage() {
         });
         setOrder(updatedOrder);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to add item');
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(error.response?.data?.message || 'Failed to add item');
     }
   };
 
@@ -184,8 +185,9 @@ export default function OrderDetailPage() {
       orderSavedRef.current = false;
       const updatedOrder = await orderService.updateItem(order.id, item.id, newQuantity);
       setOrder(updatedOrder);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update quantity');
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(error.response?.data?.message || 'Failed to update quantity');
     }
   };
 
@@ -203,8 +205,9 @@ export default function OrderDetailPage() {
       orderSavedRef.current = false;
       const updatedOrder = await orderService.removeItem(order.id, itemId);
       setOrder(updatedOrder);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to remove item');
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(error.response?.data?.message || 'Failed to remove item');
     }
   };
 
@@ -244,8 +247,9 @@ export default function OrderDetailPage() {
 
       orderSavedRef.current = true;
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to send order');
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(error.response?.data?.message || 'Failed to send order');
     } finally {
       setLoading(false);
     }
@@ -259,8 +263,9 @@ export default function OrderDetailPage() {
       }
       orderSavedRef.current = true;
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save draft');
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(error.response?.data?.message || 'Failed to save draft');
       setLoading(false);
     }
   };
@@ -277,8 +282,9 @@ export default function OrderDetailPage() {
       await orderService.close(order.id);
       orderSavedRef.current = true;
       setShowSuccessDialog(true);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to close order');
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(error.response?.data?.message || 'Failed to close order');
     }
   };
 
@@ -304,16 +310,23 @@ export default function OrderDetailPage() {
 
       window.open(url, '_blank');
       navigate('/dashboard');
-    } catch (err: any) {
-      if (err.response?.data instanceof Blob) {
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse | Blob>;
+      if (error.response?.data instanceof Blob) {
         try {
-          const text = await err.response.data.text();
+          const text = await error.response.data.text();
           const errorData = JSON.parse(text);
           setError(errorData.message || 'Failed to generate receipt');
           return;
-        } catch { }
+        } catch {
+          // ignore
+        }
       }
-      setError(err.message || 'Failed to generate receipt');
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to generate receipt');
+      } else {
+        setError('Failed to generate receipt');
+      }
     } finally {
       setLoading(false);
     }
@@ -338,8 +351,12 @@ export default function OrderDetailPage() {
       setLoading(true);
       await orderService.delete(order.id);
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Failed to discard draft');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to discard draft');
+      } else {
+        setError('Failed to discard draft');
+      }
       setLoading(false);
     }
   };

@@ -102,4 +102,4 @@ export interface CreateFoodRequest {
   image_url?: string;
 }
 
-export interface UpdateFoodRequest extends CreateFoodRequest {}
+export type UpdateFoodRequest = CreateFoodRequest;

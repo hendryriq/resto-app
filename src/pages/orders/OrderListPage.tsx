@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AxiosError } from 'axios';
+import type { ApiErrorResponse } from '../../types';
 import {
   Box,
   Typography,
@@ -24,7 +26,6 @@ export default function OrderListPage() {
   const navigate = useNavigate();
 
   const [orders, setOrders] = useState<Order[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('open');
@@ -33,8 +34,20 @@ export default function OrderListPage() {
     fetchOrders();
   }, []);
 
+
+
   useEffect(() => {
-    filterOrders();
+    fetchOrders();
+  }, []);
+
+  const filteredOrders = useMemo(() => {
+    let filtered = orders;
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(order => order.status === statusFilter);
+    }
+
+    return filtered;
   }, [orders, statusFilter]);
 
   const fetchOrders = async () => {
@@ -42,22 +55,15 @@ export default function OrderListPage() {
       setLoading(true);
       const data = await orderService.getAll();
       setOrders(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch orders');
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(error.response?.data?.message || 'Failed to fetch orders');
     } finally {
       setLoading(false);
     }
   };
 
-  const filterOrders = () => {
-    let filtered = orders;
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(order => order.status === statusFilter);
-    }
-
-    setFilteredOrders(filtered);
-  };
 
   const handleViewOrder = (order: Order) => {
     if (order.status === 'closed') {
@@ -71,8 +77,9 @@ export default function OrderListPage() {
     try {
       await orderService.close(orderId);
       fetchOrders();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to close order');
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(error.response?.data?.message || 'Failed to close order');
     }
   };
 

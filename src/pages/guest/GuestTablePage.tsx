@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -12,10 +12,10 @@ import {
   Grid,
   Fade
 } from '@mui/material';
-import { 
-  ArrowBack, 
-  TableRestaurant, 
-  EventSeat, 
+import {
+  ArrowBack,
+  TableRestaurant,
+  EventSeat,
   Storefront,
 } from '@mui/icons-material';
 import { tableService } from '../../services/tableService';
@@ -27,26 +27,30 @@ export default function GuestTablePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const hasLoaded = useRef(false);
+
+  const loadTables = useCallback(async () => {
+    try {
+      if (!hasLoaded.current) setLoading(true);
+
+      const data = await tableService.getAll();
+      setTables(data);
+      hasLoaded.current = true;
+      setError('');
+    } catch {
+      if (!hasLoaded.current) setError('Unable to connect to server.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadTables();
     const interval = setInterval(loadTables, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loadTables]);
 
-  const loadTables = async () => {
-    try {
-      if (tables.length === 0) setLoading(true);
-      
-      const data = await tableService.getAll();
-      setTables(data);
-    } catch (err: any) {
-      if (tables.length === 0) setError('Unable to connect to server.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getStatusConfig = (status: Table['status']) => {
+  const getStatusConfig = (status: string) => {
     switch (status) {
       case 'available':
         return {
@@ -97,14 +101,14 @@ export default function GuestTablePage() {
                 </Typography>
               </Box>
             </Box>
-            <Button 
-              variant="outlined" 
+            <Button
+              variant="outlined"
               startIcon={<ArrowBack />}
               onClick={() => navigate('/login')}
-              sx={{ 
-                textTransform: 'none', 
-                fontWeight: 600, 
-                color: 'white', 
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                color: 'white',
                 borderColor: 'rgba(255,255,255,0.3)',
                 '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' }
               }}
@@ -118,12 +122,12 @@ export default function GuestTablePage() {
       <Container maxWidth="lg" sx={{ pb: 6 }}>
         {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
 
-        <Paper 
+        <Paper
           elevation={0}
-          sx={{ 
-            p: 2.5, 
-            mb: 4, 
-            borderRadius: 3, 
+          sx={{
+            p: 2.5,
+            mb: 4,
+            borderRadius: 3,
             border: '1px solid #E5E7EB',
             display: 'flex',
             flexWrap: 'wrap',
@@ -136,7 +140,7 @@ export default function GuestTablePage() {
             Legend:
           </Typography>
           {['available', 'occupied', 'reserved'].map((status) => {
-            const config = getStatusConfig(status as any);
+            const config = getStatusConfig(status);
             return (
               <Chip
                 key={status}
@@ -177,39 +181,39 @@ export default function GuestTablePage() {
                       }
                     }}
                   >
-                    <Box sx={{ 
-                      position: 'absolute', 
-                      right: -10, 
-                      bottom: -10, 
+                    <Box sx={{
+                      position: 'absolute',
+                      right: -10,
+                      bottom: -10,
                       color: config.color,
                       transform: 'rotate(-15deg)'
                     }}>
                       {config.icon}
                     </Box>
 
-                    <Box sx={{ 
-                      height: 6, 
-                      width: '100%', 
-                      bgcolor: config.color, 
-                      opacity: 0.8 
+                    <Box sx={{
+                      height: 6,
+                      width: '100%',
+                      bgcolor: config.color,
+                      opacity: 0.8
                     }} />
 
-                    <Box sx={{ 
-                      p: 2, 
-                      height: '100%', 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      alignItems: 'center', 
+                    <Box sx={{
+                      p: 2,
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
                       justifyContent: 'center',
                       pb: 4
                     }}>
                       <Typography variant="h3" sx={{ fontWeight: 800, color: '#1F2937' }}>
                         {table.table_number}
                       </Typography>
-                      <Chip 
-                        size="small" 
+                      <Chip
+                        size="small"
                         label={config.label}
-                        sx={{ 
+                        sx={{
                           mt: 1,
                           height: 24,
                           fontSize: '0.7rem',

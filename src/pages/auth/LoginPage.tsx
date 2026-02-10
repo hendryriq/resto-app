@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AxiosError } from 'axios';
 import { useAuthStore } from '../../store/authStore';
 import { authService } from '../../services/authService';
+import type { ApiErrorResponse } from '../../types';
 import {
   Box,
   TextField,
@@ -14,12 +16,12 @@ import {
   Grid,
   CircularProgress
 } from '@mui/material';
-import { 
-  RestaurantMenu, 
-  Visibility, 
-  VisibilityOff, 
+import {
+  RestaurantMenu,
+  Visibility,
+  VisibilityOff,
   Storefront,
-  ArrowForward 
+  ArrowForward
 } from '@mui/icons-material';
 
 export default function LoginPage() {
@@ -32,7 +34,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const themeColor = '#1F2937'; 
+  const themeColor = '#1F2937';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,8 +45,9 @@ export default function LoginPage() {
       const { user, token } = await authService.login(email, password);
       login(user, token);
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+    } catch (err: unknown) {
+      const error = err as AxiosError<ApiErrorResponse>;
+      setError(error.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -52,9 +55,9 @@ export default function LoginPage() {
 
   return (
     <Grid container sx={{ height: '100vh', overflow: 'hidden' }}>
-      
-      <Grid 
-        size={{ md: 7, lg: 8 }} 
+
+      <Grid
+        size={{ md: 7, lg: 8 }}
         sx={{
           backgroundImage: 'url(https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=2070&auto=format&fit=crop)',
           backgroundRepeat: 'no-repeat',
@@ -81,7 +84,7 @@ export default function LoginPage() {
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
             <Box sx={{ p: 1.5, bgcolor: 'white', borderRadius: 2, display: 'flex' }}>
-                <RestaurantMenu sx={{ fontSize: 32, color: themeColor }} />
+              <RestaurantMenu sx={{ fontSize: 32, color: themeColor }} />
             </Box>
             <Typography variant="h4" fontWeight={800} letterSpacing={1}>
               RestaurantPOS
@@ -90,20 +93,20 @@ export default function LoginPage() {
         </Box>
       </Grid>
 
-      <Grid 
-        size={{ xs: 12, md: 5, lg: 4 }} 
-        sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
+      <Grid
+        size={{ xs: 12, md: 5, lg: 4 }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'center',
-          bgcolor: '#F9FAFB' 
+          bgcolor: '#F9FAFB'
         }}
       >
-        <Paper 
+        <Paper
           elevation={0}
-          sx={{ 
-            p: { xs: 4, sm: 6 }, 
-            width: '100%', 
+          sx={{
+            p: { xs: 4, sm: 6 },
+            width: '100%',
             maxWidth: 500,
             bgcolor: 'transparent'
           }}
@@ -199,8 +202,8 @@ export default function LoginPage() {
               variant="contained"
               size="large"
               disabled={loading}
-              sx={{ 
-                py: 1.8, 
+              sx={{
+                py: 1.8,
                 bgcolor: themeColor,
                 borderRadius: 2,
                 fontWeight: 700,
@@ -226,7 +229,7 @@ export default function LoginPage() {
               onClick={() => navigate('/guest/tables')}
               startIcon={<Storefront />}
               endIcon={<ArrowForward />}
-              sx={{ 
+              sx={{
                 borderRadius: 2,
                 textTransform: 'none',
                 fontWeight: 600,
