@@ -6,6 +6,7 @@ import OrderDetailPage from './pages/orders/OrderDetailPage';
 import OrderListPage from './pages/orders/OrderListPage';
 import MenuManagementPage from './pages/menu/MenuManagementPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import GuestTablePage from './pages/guest/GuestTablePage';
 
 const theme = createTheme({
   palette: {
@@ -28,6 +29,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/guest/tables" element={<GuestTablePage />} />
           <Route
             path="/dashboard"
             element={
