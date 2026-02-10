@@ -5,6 +5,7 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 import OrderDetailPage from './pages/orders/OrderDetailPage';
 import OrderListPage from './pages/orders/OrderListPage';
 import MenuManagementPage from './pages/menu/MenuManagementPage';
+import OrderHistoryDetailPage from './pages/orders/OrderHistoryDetailPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import GuestTablePage from './pages/guest/GuestTablePage';
 
@@ -59,6 +60,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <OrderDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders/:orderId/view"
+            element={
+              <ProtectedRoute>
+                <OrderHistoryDetailPage />
               </ProtectedRoute>
             }
           />

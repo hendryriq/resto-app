@@ -22,7 +22,7 @@ import type { Order } from '../../types';
 
 export default function OrderListPage() {
   const navigate = useNavigate();
-  
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +60,11 @@ export default function OrderListPage() {
   };
 
   const handleViewOrder = (order: Order) => {
-    navigate(`/orders/new?tableId=${order.table_id}`);
+    if (order.status === 'closed') {
+      navigate(`/orders/${order.id}/view`);
+    } else {
+      navigate(`/orders/new?tableId=${order.table_id}`);
+    }
   };
 
   const handleCloseOrder = async (orderId: number) => {
@@ -101,7 +105,7 @@ export default function OrderListPage() {
           <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827' }}>
             Order Management
           </Typography>
-          
+
           <ViewToggle />
         </Box>
 
@@ -111,11 +115,11 @@ export default function OrderListPage() {
           </Alert>
         )}
 
-        <Paper 
+        <Paper
           elevation={0}
-          sx={{ 
+          sx={{
             mb: 3,
-            bgcolor: 'white', 
+            bgcolor: 'white',
             border: '1px solid #E5E7EB',
             borderRadius: 3,
             overflow: 'hidden'
@@ -182,7 +186,7 @@ export default function OrderListPage() {
                   bgcolor: 'white',
                   transition: 'all 0.2s',
                   cursor: 'pointer',
-                  '&:hover': { 
+                  '&:hover': {
                     borderColor: '#9CA3AF',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                   },
@@ -242,7 +246,7 @@ export default function OrderListPage() {
                   <Typography variant="caption" sx={{ color: '#9CA3AF' }}>
                     {formatDate(order.created_at)}
                   </Typography>
-                  
+
                   <Box sx={{ display: 'flex', gap: 1 }} onClick={(e) => e.stopPropagation()}>
                     <Button
                       size="small"

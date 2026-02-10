@@ -57,4 +57,9 @@ export const orderService = {
     const response = await api.put<ApiResponse<Order>>(`/orders/${orderId}/activate`);
     return response.data.data;
   },
+
+  getReceipt: async (orderId: number) => {
+    const response = await api.get(`/orders/${orderId}/receipt`, { responseType: 'blob' });
+    return response.data;
+  },
 };

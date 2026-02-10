@@ -13,6 +13,10 @@ import {
   Tab,
   Avatar,
   InputAdornment,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   ArrowBack,
@@ -22,9 +26,10 @@ import {
   NoteAltOutlined,
   Search,
   Send,
-  Print,
+
   CheckCircle,
-  SaveOutlined
+  SaveOutlined,
+  Print
 } from '@mui/icons-material';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { orderService } from '../../services/orderService';
@@ -47,6 +52,7 @@ export default function OrderDetailPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   const orderSavedRef = useRef(false);
   const orderIdRef = useRef<number | null>(null);
@@ -276,13 +282,53 @@ export default function OrderDetailPage() {
       }
       await orderService.close(order.id);
       orderSavedRef.current = true;
-      navigate('/dashboard');
+      setShowSuccessDialog(true);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to close order');
     }
   };
 
+  const handlePrintReceipt = async () => {
+    if (!order) return;
+    setLoading(true);
+    try {
+      const blob = await orderService.getReceipt(order.id);
 
+      if (blob.type === 'application/json') {
+        const text = await blob.text();
+        const data = JSON.parse(text);
+        throw new Error(data.message || 'Failed to generate receipt');
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `receipt-order-${order.id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.open(url, '_blank');
+      navigate('/dashboard');
+    } catch (err: any) {
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const errorData = JSON.parse(text);
+          setError(errorData.message || 'Failed to generate receipt');
+          return;
+        } catch { }
+      }
+      setError(err.message || 'Failed to generate receipt');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDialogClose = () => {
+    setShowSuccessDialog(false);
+    navigate('/dashboard');
+  };
 
   const filteredMenuItems = menuItems
     .filter(item => item.category === selectedCategory)
@@ -557,7 +603,7 @@ export default function OrderDetailPage() {
                     '&:hover': { bgcolor: '#111827' }
                   }}
                 >
-                  Send to Kitchen
+                  {order?.status === 'open' ? 'Update Order' : 'Send to Kitchen'}
                 </Button>
 
                 <Box sx={{ display: 'flex', gap: 2 }}>
@@ -600,30 +646,35 @@ export default function OrderDetailPage() {
                   >
                     Close Order
                   </Button>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={<Print />}
-                    onClick={() => window.print()}
-                    disabled={!order?.items || order.items.length === 0}
-                    sx={{
-                      borderColor: '#E5E7EB',
-                      color: '#374151',
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      borderRadius: 2,
-                      py: 1,
-                      '&:hover': { borderColor: '#D1D5DB', bgcolor: '#F9FAFB' }
-                    }}
-                  >
-                    Print Bill
-                  </Button>
                 </Box>
               </Box>
             </Paper>
           </Box>
         </Box>
       </Box>
-    </DashboardLayout>
+
+
+      <Dialog open={showSuccessDialog} onClose={handleDialogClose}>
+        <DialogTitle sx={{ fontWeight: 700 }}>Order Closed Successfully</DialogTitle>
+        <DialogContent>
+          <Typography>
+            The order has been closed. Would you like to print the receipt now?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={handleDialogClose} color="inherit">
+            No, Go to Dashboard
+          </Button>
+          <Button
+            onClick={handlePrintReceipt}
+            variant="contained"
+            startIcon={<Print />}
+            sx={{ bgcolor: '#1F2937', '&:hover': { bgcolor: '#111827' } }}
+          >
+            Print Receipt
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </DashboardLayout >
   );
 }

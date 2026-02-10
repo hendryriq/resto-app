@@ -10,6 +10,7 @@ import {
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import ViewToggle from '../../components/common/ViewToggle';
 import { tableService } from '../../services/tableService';
+import { orderService } from '../../services/orderService';
 import type { Table } from '../../types';
 
 export default function DashboardPage() {
@@ -25,8 +26,19 @@ export default function DashboardPage() {
   const loadTables = async () => {
     try {
       setLoading(true);
-      const data = await tableService.getAll();
-      setTables(data);
+      const [tablesData, pendingOrders] = await Promise.all([
+        tableService.getAll(),
+        orderService.getAll({ status: 'pending' })
+      ]);
+
+      const pendingTableIds = new Set(pendingOrders.map(o => o.table_id));
+
+      const updatedTables = tablesData.map(table => ({
+        ...table,
+        status: pendingTableIds.has(table.id) ? 'occupied' : table.status
+      }));
+
+      setTables(updatedTables);
       setError('');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load tables');
@@ -57,7 +69,7 @@ export default function DashboardPage() {
     if (table.status === 'available') {
       navigate(`/orders/new?tableId=${table.id}`);
     } else {
-      navigate(`/orders/${table.id}`); 
+      navigate(`/orders/${table.id}`);
     }
   };
 
@@ -74,24 +86,24 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <Box sx={{ bgcolor: '#F9FAFB', minHeight: '100vh', p: 3 }}>
-        
+
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827' }}>
             Table Management
           </Typography>
-          
+
           <ViewToggle />
         </Box>
 
         {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-        <Paper 
+        <Paper
           elevation={0}
-          sx={{ 
-            p: 3, 
+          sx={{
+            p: 3,
             mb: 3,
-            bgcolor: 'white', 
-            borderRadius: 3, 
+            bgcolor: 'white',
+            borderRadius: 3,
             border: '1px solid #E5E7EB'
           }}
         >
@@ -113,28 +125,28 @@ export default function DashboardPage() {
           </Box>
         </Paper>
 
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            p: 4, 
-            bgcolor: 'white', 
-            borderRadius: 3, 
+        <Paper
+          elevation={0}
+          sx={{
+            p: 4,
+            bgcolor: 'white',
+            borderRadius: 3,
             border: '1px solid #E5E7EB',
             minHeight: '60vh'
           }}
         >
           <Box sx={{ display: 'flex', gap: 6, flexDirection: { xs: 'column', lg: 'row' } }}>
-            
+
             <Box sx={{ flex: 1 }}>
-              <Box 
-                sx={{ 
+              <Box
+                sx={{
                   display: 'grid',
                   gridTemplateColumns: {
                     xs: 'repeat(2, 1fr)',
                     sm: 'repeat(4, 1fr)',
                     md: 'repeat(6, 1fr)',
                   },
-                  gap: 2.5 
+                  gap: 2.5
                 }}
               >
                 {tables.map((table) => (
@@ -171,18 +183,18 @@ export default function DashboardPage() {
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 700, color: '#111827' }}>
                 Quick Stats
               </Typography>
-              
+
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {[
                   { label: 'Available Tables', value: stats.available },
                   { label: 'Occupied Tables', value: stats.occupied }
                 ].map((stat) => (
-                  <Paper 
-                    key={stat.label} 
+                  <Paper
+                    key={stat.label}
                     elevation={0}
-                    sx={{ 
-                      p: 2.5, 
-                      borderRadius: 2, 
+                    sx={{
+                      p: 2.5,
+                      borderRadius: 2,
                       border: '1px solid #F1F5F9',
                       bgcolor: '#F8FAFC',
                       transition: 'background-color 0.2s',
