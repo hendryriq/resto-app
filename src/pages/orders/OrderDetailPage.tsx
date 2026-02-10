@@ -53,6 +53,7 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
 
   const orderSavedRef = useRef(false);
   const orderIdRef = useRef<number | null>(null);
@@ -64,13 +65,6 @@ export default function OrderDetailPage() {
   }, [tableId]);
 
   useEffect(() => {
-    return () => {
-      if (orderIdRef.current && !orderSavedRef.current) {
-        orderService.delete(orderIdRef.current).catch(err => {
-          console.error('Failed to delete unsaved order:', err);
-        });
-      }
-    };
   }, []);
 
   const initializeOrder = async () => {
@@ -330,6 +324,30 @@ export default function OrderDetailPage() {
     navigate('/dashboard');
   };
 
+  const handleBackNavigation = () => {
+    if (order && order.status === 'pending') {
+      setShowExitDialog(true);
+    } else {
+      navigate('/dashboard');
+    }
+  };
+
+  const handleDiscardDraft = async () => {
+    if (!order) return;
+    try {
+      setLoading(true);
+      await orderService.delete(order.id);
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Failed to discard draft');
+      setLoading(false);
+    }
+  };
+
+  const handleKeepDraft = () => {
+    navigate('/dashboard');
+  };
+
   const filteredMenuItems = menuItems
     .filter(item => item.category === selectedCategory)
     .filter(item =>
@@ -353,7 +371,7 @@ export default function OrderDetailPage() {
         {/* Header Section */}
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton onClick={() => navigate('/dashboard')} sx={{ color: '#111827' }}>
+            <IconButton onClick={handleBackNavigation} sx={{ color: '#111827' }}>
               <ArrowBack />
             </IconButton>
             <Box>
@@ -673,6 +691,28 @@ export default function OrderDetailPage() {
           >
             Print Receipt
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={showExitDialog} onClose={() => setShowExitDialog(false)}>
+        <DialogTitle sx={{ fontWeight: 700 }}>Unsaved Changes</DialogTitle>
+        <DialogContent>
+          <Typography>
+            You have a pending draft. Do you want to save it for later or discard it?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+          <Button onClick={handleDiscardDraft} color="error" startIcon={<DeleteOutline />}>
+            Discard
+          </Button>
+          <Box>
+            <Button onClick={() => setShowExitDialog(false)} color="inherit" sx={{ mr: 1 }}>
+              Cancel
+            </Button>
+            <Button onClick={handleKeepDraft} variant="contained" startIcon={<SaveOutlined />} sx={{ bgcolor: '#1F2937' }}>
+              Save Draft
+            </Button>
+          </Box>
         </DialogActions>
       </Dialog>
     </DashboardLayout >
