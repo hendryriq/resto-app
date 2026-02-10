@@ -1,73 +1,76 @@
-# React + TypeScript + Vite
+# Restaurant POS System (Frontend)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+System Point of Sale (POS) berbasis web untuk manajemen restoran, dibangun dengan React, TypeScript, dan Vite. Aplikasi ini mencakup fitur untuk manajemen meja, pemesanan, menu, dan struk pembayaran.
 
-Currently, two official plugins are available:
+> **Note**: Frontend ini terhubung dengan backend yang memiliki repository terpisah. Silakan cek [hendryriq/resto-api](https://github.com/hendryriq/resto-api) untuk setup backend.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Fitur Utama
 
-## React Compiler
+- **Authentication**: Login aman untuk staff/kasir.
+- **Dashboard**:
+  - Monitoring status meja secara real-time (Available, Occupied).
+  - Quick stats (Meja terisi vs kosong).
+  - Toggle view antara Grid dan List.
+- **Manajemen Pesanan (Orders)**:
+  - Membuat pesanan baru per meja.
+  - Menyimpan draft pesanan (Auto-save).
+  - Mengirim pesanan ke dapur (Send to Kitchen).
+  - Menutup pesanan (Close Order) dan cetak struk (Receipt).
+  - Riwayat pesanan (Order History).
+- **Manajemen Menu**: CRUD untuk item makanan dan minuman.
+- **Guest View**: Tampilan publik untuk tamu melihat status meja restoran.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Teknologi yang Digunakan
 
-## Expanding the ESLint configuration
+- **Frontend Framework**: [React](https://react.dev/) + [Vite](https://vitejs.dev/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **UI Component Library**: [Material UI (MUI)](https://mui.com/)
+- **State Management**: [Zustand](https://github.com/pmndrs/zustand)
+- **Routing**: [React Router DOM](https://reactrouter.com/)
+- **HTTP Client**: [Axios](https://axios-http.com/)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Prasyarat
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Sebelum memulai, pastikan Anda telah menginstal:
+- [Node.js](https://nodejs.org/) (Versi 18 atau lebih baru direkomendasikan).
+- Backend API server yang sudah berjalan. Source code backend dapat diakses di: [https://github.com/hendryriq/resto-api](https://github.com/hendryriq/resto-api).
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Instalasi & Setup
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1.  **Clone repository ini:**
+    ```bash
+    git clone <repository_url>
+    cd resto-app
+    ```
+
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+
+3.  **Konfigurasi Environment Variables:**
+    Buat file `.env` di root direktori project (sejajar dengan `package.json`). Anda bisa menyalin format di bawah ini:
+
+    ```env
+    # URL Backend API Anda
+    VITE_API_BASE_URL=http://localhost:8000/api
+    ```
+
+4.  **Jalankan server development:**
+    ```bash
+    npm run dev
+    ```
+    Aplikasi biasanya akan berjalan di `http://localhost:5173`.
+
+## 📂 Struktur Project
+
 ```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+src/
+├── components/     # Komponen UI reusable (Layout, Common)
+├── pages/          # Halaman aplikasi (Dashboard, Orders, Menu, Login)
+├── services/       # Logic API calls (authService, orderService, etc.)
+├── store/          # Global state management (Zustand)
+├── types/          # TypeScript definitions
+├── App.tsx         # Main entry component & routing
+└── main.tsx        # Application root
 ```
