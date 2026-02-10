@@ -13,7 +13,6 @@ import {
   TextField,
   Tabs,
   Tab,
-  Avatar,
   InputAdornment,
   Dialog,
   DialogTitle,
