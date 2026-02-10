@@ -411,7 +411,6 @@ export default function OrderDetailPage() {
             </Box>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: '#1F2937' }} src="/broken-image.jpg" />
             <Typography variant="body2" sx={{ fontWeight: 600 }}>{user?.name}</Typography>
           </Box>
         </Box>
@@ -419,9 +418,7 @@ export default function OrderDetailPage() {
         {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
         <Box sx={{ display: 'flex', gap: 3, height: 'calc(100vh - 140px)' }}>
-          {/* LEFT SIDE: MENU */}
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            {/* Category Tabs */}
             <Box sx={{ mb: 2 }}>
               <Tabs
                 value={selectedCategory}
@@ -453,7 +450,6 @@ export default function OrderDetailPage() {
               </Tabs>
             </Box>
 
-            {/* Search Bar */}
             <TextField
               fullWidth
               placeholder="Search menu items..."
@@ -478,7 +474,6 @@ export default function OrderDetailPage() {
               }}
             />
 
-            {/* Menu List */}
             <Box sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {filteredMenuItems.map(item => (
@@ -512,7 +507,7 @@ export default function OrderDetailPage() {
                         sx={{
                           bgcolor: '#1F2937',
                           color: 'white',
-                          borderRadius: 2, // Kotak tumpul
+                          borderRadius: 2,
                           width: 44,
                           height: 44,
                           '&:hover': { bgcolor: '#000' }
@@ -557,7 +552,6 @@ export default function OrderDetailPage() {
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                     {order.items.map(item => (
                       <Box key={item.id}>
-                        {/* Baris 1: Nama & Harga */}
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
                           <Typography variant="body1" sx={{ fontWeight: 600, color: '#111827' }}>
                             {item.food.name}
@@ -628,7 +622,7 @@ export default function OrderDetailPage() {
                   onClick={handleSendToKitchen}
                   disabled={!order?.items || order.items.length === 0}
                   sx={{
-                    bgcolor: '#1F2937', // Black color
+                    bgcolor: '#1F2937',
                     color: 'white',
                     textTransform: 'none',
                     fontWeight: 700,
