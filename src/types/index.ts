@@ -51,7 +51,7 @@ export interface Order {
     id: number;
     name: string;
   };
-  status: 'open' | 'closed';
+  status: 'pending' | 'open' | 'closed';
   items: OrderItem[];
   total: number;
   created_at: string;

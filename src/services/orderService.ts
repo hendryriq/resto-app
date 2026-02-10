@@ -3,7 +3,7 @@ import type { Order, ApiResponse } from '../types';
 
 export const orderService = {
   create: async (tableId: number) => {
-    const response = await api.post<ApiResponse<Order>>('/orders', { table_id: tableId });
+    const response = await api.post<ApiResponse<Order>>('/orders/draft', { table_id: tableId });
     return response.data.data;
   },
   
@@ -50,6 +50,11 @@ export const orderService = {
   
   close: async (orderId: number) => {
     const response = await api.put<ApiResponse<Order>>(`/orders/${orderId}/close`);
+    return response.data.data;
+  },
+
+  activate: async (orderId: number) => {
+    const response = await api.put<ApiResponse<Order>>(`/orders/${orderId}/activate`);
     return response.data.data;
   },
 };

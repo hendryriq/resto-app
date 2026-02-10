@@ -8,9 +8,8 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Select,
-  MenuItem,
-  FormControl,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   Visibility,
@@ -28,7 +27,7 @@ export default function OrderListPage() {
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('open');
 
   useEffect(() => {
     fetchOrders();
@@ -73,7 +72,7 @@ export default function OrderListPage() {
     }
   };
 
-  const formatCurrency = (amount: number) => `Rp ${amount.toLocaleString('id-ID')}`;
+  const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('id-ID', {
@@ -115,67 +114,39 @@ export default function OrderListPage() {
         <Paper 
           elevation={0}
           sx={{ 
-            p: 3, 
             mb: 3,
             bgcolor: 'white', 
             border: '1px solid #E5E7EB',
-            borderRadius: 3
+            borderRadius: 3,
+            overflow: 'hidden'
           }}
         >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#111827' }}>
-              Order Status
-            </Typography>
-            
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <Select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                sx={{ 
-                  bgcolor: 'white',
-                  borderRadius: 1.5,
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#E5E7EB',
-                  },
-                }}
-              >
-                <MenuItem value="all">All Orders</MenuItem>
-                <MenuItem value="open">Open Orders</MenuItem>
-                <MenuItem value="closed">Closed Orders</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-
-          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1,
-              px: 2,
-              py: 1,
-              bgcolor: '#F9FAFB',
-              borderRadius: 1.5
-            }}>
-              <Box sx={{ width: 12, height: 12, bgcolor: '#3B82F6', borderRadius: '50%' }} />
-              <Typography variant="body2" sx={{ color: '#6B7280', fontWeight: 500 }}>
-                Open
-              </Typography>
-            </Box>
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1,
-              px: 2,
-              py: 1,
-              bgcolor: '#F9FAFB',
-              borderRadius: 1.5
-            }}>
-              <Box sx={{ width: 12, height: 12, bgcolor: '#10B981', borderRadius: '50%' }} />
-              <Typography variant="body2" sx={{ color: '#6B7280', fontWeight: 500 }}>
-                Closed
-              </Typography>
-            </Box>
-          </Box>
+          <Tabs
+            value={statusFilter}
+            onChange={(_, newValue) => setStatusFilter(newValue)}
+            variant="fullWidth"
+            sx={{
+              '& .MuiTab-root': {
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.95rem',
+                py: 2,
+                color: '#6B7280',
+                '&.Mui-selected': {
+                  color: '#1F2937',
+                }
+              },
+              '& .MuiTabs-indicator': {
+                bgcolor: '#1F2937',
+                height: 2
+              }
+            }}
+          >
+            <Tab label="Active Orders" value="open" />
+            <Tab label="Drafts" value="pending" />
+            <Tab label="History" value="closed" />
+            <Tab label="All" value="all" />
+          </Tabs>
         </Paper>
 
         {filteredOrders.length === 0 ? (
@@ -231,8 +202,8 @@ export default function OrderListPage() {
                     label={order.status.toUpperCase()}
                     size="small"
                     sx={{
-                      bgcolor: order.status === 'open' ? '#DBEAFE' : '#D1FAE5',
-                      color: order.status === 'open' ? '#1E40AF' : '#065F46',
+                      bgcolor: order.status === 'open' ? '#DBEAFE' : order.status === 'pending' ? '#FEF3C7' : '#D1FAE5',
+                      color: order.status === 'open' ? '#1E40AF' : order.status === 'pending' ? '#D97706' : '#065F46',
                       fontWeight: 700,
                       fontSize: '0.7rem',
                       height: 24,

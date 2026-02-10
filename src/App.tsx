@@ -45,6 +45,14 @@ function App() {
             }
           />
           <Route
+            path="/orders/:tableId"
+            element={
+              <ProtectedRoute>
+                <OrderDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/orders/new"
             element={
               <ProtectedRoute>

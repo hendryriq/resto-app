@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -23,6 +23,7 @@ import {
   Search,
   Send,
   Print,
+  CheckCircle,
   SaveOutlined
 } from '@mui/icons-material';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -33,8 +34,9 @@ import type { Order, Food, OrderItem, Table } from '../../types';
 
 export default function OrderDetailPage() {
   const navigate = useNavigate();
+  const { tableId: routeTableId } = useParams<{ tableId: string }>();
   const [searchParams] = useSearchParams();
-  const tableId = searchParams.get('tableId');
+  const tableId = routeTableId || searchParams.get('tableId');
   const user = useAuthStore((state) => state.user);
 
   const [table, setTable] = useState<Table | null>(null);
@@ -45,7 +47,6 @@ export default function OrderDetailPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [actionLoading, setActionLoading] = useState(false);
   
   const orderSavedRef = useRef(false);
   const orderIdRef = useRef<number | null>(null);
@@ -79,7 +80,10 @@ export default function OrderDetailPage() {
         setSelectedCategory(uniqueCategories[0]);
       }
       
-      const existingOrders = await orderService.getByTableAndStatus(Number(tableId), 'open');
+      let existingOrders = await orderService.getByTableAndStatus(Number(tableId), 'open');
+      if (!existingOrders || existingOrders.length === 0) {
+        existingOrders = await orderService.getByTableAndStatus(Number(tableId), 'pending');
+      }
       if (existingOrders && existingOrders.length > 0) {
         const existingOrder = existingOrders[0];
         setOrder(existingOrder);
@@ -98,34 +102,60 @@ export default function OrderDetailPage() {
 
   const handleAddItem = async (food: Food) => {
     try {
-      if (!order) {
-        const newOrder = await orderService.create(Number(tableId));
-        setOrder(newOrder);
-        setTable(newOrder.table);
-        orderIdRef.current = newOrder.id;
+      if (!order || order.id === 0) {
+        const newItems = order?.items ? [...order.items] : [];
+        const existingItemIndex = newItems.findIndex(item => item.food_id === food.id);
+
+        if (existingItemIndex >= 0) {
+          const existingItem = newItems[existingItemIndex];
+          newItems[existingItemIndex] = {
+            ...existingItem,
+            quantity: existingItem.quantity + 1,
+            subtotal: (existingItem.quantity + 1) * existingItem.price
+          };
+        } else {
+          const newItem: OrderItem = {
+            id: Date.now(),
+            food_id: food.id,
+            food: food,
+            quantity: 1,
+            price: food.price,
+            subtotal: food.price
+          };
+          newItems.push(newItem);
+        }
+
+        const newTotal = newItems.reduce((sum, item) => sum + item.subtotal, 0);
+        
+        setOrder({
+          id: order?.id || 0,
+          table_id: Number(tableId),
+          table: table || { id: Number(tableId), table_number: tableId || '', status: 'occupied' }, 
+          user: user || { id: 0, name: '' },
+          status: 'pending',
+          items: newItems,
+          total: newTotal,
+          created_at: new Date().toISOString()
+        });
         orderSavedRef.current = false;
-        const updatedOrder = await orderService.addItem(newOrder.id, {
+        return;
+      }
+
+      orderSavedRef.current = false;
+      const existingItem = order.items.find(item => item.food_id === food.id);
+      if (existingItem) {
+        const updatedOrder = await orderService.updateItem(
+          order.id, 
+          existingItem.id, 
+          existingItem.quantity + 1
+        );
+        setOrder(updatedOrder);
+      } else {
+        const updatedOrder = await orderService.addItem(order.id, {
           food_id: food.id,
           quantity: 1,
         });
         setOrder(updatedOrder);
-      } else {
-        orderSavedRef.current = false;
-        const existingItem = order.items.find(item => item.food_id === food.id);
-        if (existingItem) {
-          const updatedOrder = await orderService.updateItem(
-            order.id, 
-            existingItem.id, 
-            existingItem.quantity + 1
-          );
-          setOrder(updatedOrder);
-        } else {
-          const updatedOrder = await orderService.addItem(order.id, {
-            food_id: food.id,
-            quantity: 1,
-          });
-          setOrder(updatedOrder);
-        }
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to add item');
@@ -136,7 +166,21 @@ export default function OrderDetailPage() {
     if (!order) return;
     const newQuantity = item.quantity + delta;
     if (newQuantity < 1) return;
+
     try {
+      if (order.id === 0) {
+        const newItems = order.items.map(i => {
+           if (i.food_id === item.food_id) {
+             return { ...i, quantity: newQuantity, subtotal: newQuantity * i.price };
+           }
+           return i;
+        });
+        const newTotal = newItems.reduce((sum, i) => sum + i.subtotal, 0);
+        setOrder({ ...order, items: newItems, total: newTotal });
+        orderSavedRef.current = false;
+        return;
+      }
+
       orderSavedRef.current = false;
       const updatedOrder = await orderService.updateItem(order.id, item.id, newQuantity);
       setOrder(updatedOrder);
@@ -148,6 +192,14 @@ export default function OrderDetailPage() {
   const handleRemoveItem = async (itemId: number) => {
     if (!order) return;
     try {
+      if (order.id === 0) {
+        const newItems = order.items.filter(i => i.id !== itemId);
+        const newTotal = newItems.reduce((sum, i) => sum + i.subtotal, 0);
+        setOrder({ ...order, items: newItems, total: newTotal });
+        orderSavedRef.current = false;
+        return;
+      }
+
       orderSavedRef.current = false;
       const updatedOrder = await orderService.removeItem(order.id, itemId);
       setOrder(updatedOrder);
@@ -156,26 +208,81 @@ export default function OrderDetailPage() {
     }
   };
 
+  const saveLocalOrderToBackend = async () => {
+    if (!order || order.items.length === 0) return null;
+    let finalOrder = order;
+
+    if (order.id === 0) {
+        const newOrder = await orderService.create(Number(tableId));
+        for (const item of order.items) {
+            await orderService.addItem(newOrder.id, {
+                food_id: item.food_id,
+                quantity: item.quantity
+            });
+        }
+        finalOrder = await orderService.getById(newOrder.id);
+        setOrder(finalOrder);
+        orderIdRef.current = finalOrder.id;
+    }
+    return finalOrder;
+  };
+
   const handleSendToKitchen = async () => {
     if (!order) return;
+    
     try {
-      setActionLoading(true);
-      await orderService.close(order.id);
+      setLoading(true);
+      let targetOrder = order;
+      
+      if (order.id === 0) {
+         const savedOrder = await saveLocalOrderToBackend();
+         if (savedOrder) targetOrder = savedOrder;
+      }
+      if (targetOrder && targetOrder.status === 'pending') {
+        await orderService.activate(targetOrder.id);
+      }
+      
       orderSavedRef.current = true;
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to send order');
     } finally {
-      setActionLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleSaveDraft = () => {
-    if (order) {
+  const handleSaveDraft = async () => {
+    try {
+      if (order && order.id === 0) {
+          setLoading(true);
+          await saveLocalOrderToBackend();
+      }
       orderSavedRef.current = true;
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to save draft');
+      setLoading(false);
     }
-    navigate('/dashboard');
   };
+
+  const handleCloseOrder = async () => {
+    if (!order) return;
+    try {
+      if (order.id === 0) {
+         setOrder(null);
+         orderSavedRef.current = true;
+         navigate('/dashboard');
+         return;
+      }
+      await orderService.close(order.id);
+      orderSavedRef.current = true;
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to close order');
+    }
+  };
+
+
 
   const filteredMenuItems = menuItems
     .filter(item => item.category === selectedCategory)
@@ -209,15 +316,15 @@ export default function OrderDetailPage() {
                             {table?.table_number || `Table ${tableId}`}
                         </Typography>
                         <Box sx={{ 
-                            bgcolor: '#F3F4F6', 
+                            bgcolor: order?.status === 'open' ? '#DBEAFE' : order?.status === 'pending' ? '#FEF3C7' : '#F3F4F6', 
                             px: 1, 
                             py: 0.5, 
                             borderRadius: 1, 
                             fontSize: '0.75rem', 
                             fontWeight: 600, 
-                            color: '#4B5563' 
+                            color: order?.status === 'open' ? '#1E40AF' : order?.status === 'pending' ? '#D97706' : '#4B5563' 
                         }}>
-                            New Order
+                            {order?.status === 'open' ? 'Open' : order?.status === 'pending' ? 'Draft' : 'New Order'}
                         </Box>
                     </Box>
                 </Box>
@@ -438,7 +545,7 @@ export default function OrderDetailPage() {
                         size="large"
                         startIcon={<Send />}
                         onClick={handleSendToKitchen}
-                        disabled={!order?.items || order.items.length === 0 || actionLoading}
+                        disabled={!order?.items || order.items.length === 0}
                         sx={{
                             bgcolor: '#1F2937', // Black color
                             color: 'white',
@@ -471,6 +578,27 @@ export default function OrderDetailPage() {
                             }}
                         >
                             Save Draft
+                        </Button>
+                        <Button
+                            fullWidth
+                            variant="outlined"
+                            startIcon={<CheckCircle />}
+                            onClick={handleCloseOrder}
+                            disabled={!order?.items || order.items.length === 0 || order?.status === 'pending'}
+                            sx={{
+                                borderColor: order?.status === 'pending' ? '#E5E7EB' : '#10B981',
+                                color: order?.status === 'pending' ? '#9CA3AF' : '#10B981',
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                borderRadius: 2,
+                                py: 1,
+                                '&:hover': { 
+                                    borderColor: order?.status === 'pending' ? '#E5E7EB' : '#059669', 
+                                    bgcolor: order?.status === 'pending' ? 'transparent' : '#ECFDF5' 
+                                }
+                            }}
+                        >
+                            Close Order
                         </Button>
                         <Button
                             fullWidth
