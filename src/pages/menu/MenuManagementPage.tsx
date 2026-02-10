@@ -577,18 +577,26 @@ export default function MenuManagementPage() {
                     </Select>
                 </FormControl>
                 <TextField
-                    label="Price"
-                    type="number"
-                    placeholder="0.00"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                    error={!!formErrors.price}
-                    helperText={formErrors.price}
-                    fullWidth
-                    InputLabelProps={{ shrink: true }}
-                    InputProps={{
+                  label="Price"
+                  type="number"
+                  placeholder="0.00"
+                  value={formData.price === 0 ? '' : formData.price}
+
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData({
+                      ...formData,
+                      price: val === '' ? 0 : parseFloat(val)
+                    });
+                  }}
+
+                  error={!!formErrors.price}
+                  helperText={formErrors.price}
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  InputProps={{
                     startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                    }}
+                  }}
                 />
               </Box>
               
